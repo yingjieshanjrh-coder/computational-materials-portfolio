@@ -29,6 +29,22 @@ two-dimensional with one interaction and no connection to a particular
 material: energies are in units of `J`, and the voltage axis has an arbitrary
 offset.
 
+Related work, so it is clear what already exists:
+
+- Lattice-gas models of intercalation compounds with short-range
+  nearest-neighbour interactions, where the open-circuit voltage shows steps at
+  critical concentrations, have been studied with mean-field theory, the Bethe
+  approximation and Monte Carlo (the paper "Lattice-gas model for
+  intercalation compounds").
+- `lattice_mc` (B. J. Morgan, JOSS 2017) is a Python lattice-gas Monte Carlo
+  package for ionic transport that supports nearest-neighbour repulsion and
+  site-dependent energies.
+- Lattice kinetic Monte Carlo of intercalation under potentiostatic and
+  galvanostatic conditions has also been published (for example for Li in
+  graphite).
+- Onsager (1944) for the exact solution and Binder (1981) for the cumulant
+  method used in the validation below.
+
 ## Validation
 
 At `mu = 2J` (half filling) the model is an antiferromagnetic Ising model with
