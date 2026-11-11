@@ -1,0 +1,25 @@
+null max Sharpe (5y, zero skill)
+  N=    1 best=-0.02 theory=0.00 P(best>1)=0.01 FP(PSR)=0.05 FP(DSR)=0.05
+  N=    2 best=0.23 theory=0.23 P(best>1)=0.02 FP(PSR)=0.08 FP(DSR)=0.00
+  N=    5 best=0.50 theory=0.53 P(best>1)=0.04 FP(PSR)=0.21 FP(DSR)=0.00
+  N=   10 best=0.68 theory=0.70 P(best>1)=0.10 FP(PSR)=0.39 FP(DSR)=0.00
+  N=   20 best=0.83 theory=0.85 P(best>1)=0.22 FP(PSR)=0.64 FP(DSR)=0.00
+  N=   50 best=1.02 theory=1.02 P(best>1)=0.49 FP(PSR)=0.94 FP(DSR)=0.00
+  N=  100 best=1.14 theory=1.13 P(best>1)=0.76 FP(PSR)=1.00 FP(DSR)=0.00
+  N=  200 best=1.24 theory=1.24 P(best>1)=0.92 FP(PSR)=1.00 FP(DSR)=0.00
+  N=  500 best=1.36 theory=1.37 P(best>1)=1.00 FP(PSR)=1.00 FP(DSR)=0.00
+  N= 1000 best=1.46 theory=1.46 P(best>1)=1.00 FP(PSR)=1.00 FP(DSR)=0.00
+PBO vs share of skilled candidates
+  share=0.00 PBO=0.53+-0.17 drop=1.65
+  share=0.02 PBO=0.36+-0.14 drop=1.45
+  share=0.05 PBO=0.20+-0.13 drop=1.19
+  share=0.10 PBO=0.18+-0.10 drop=1.29
+  share=0.25 PBO=0.14+-0.09 drop=1.28
+  share=0.50 PBO=0.25+-0.10 drop=1.51
+power with one real strategy among 100
+  SR=0.0 picked=0.01 PSR=0.99 DSR=0.00
+  SR=0.5 picked=0.12 PSR=0.99 DSR=0.01
+  SR=1.0 picked=0.39 PSR=0.99 DSR=0.01
+  SR=1.5 picked=0.82 PSR=1.00 DSR=0.14
+  SR=2.0 picked=0.97 PSR=1.00 DSR=0.51
+  SR=3.0 picked=1.00 PSR=1.00 DSR=0.98
