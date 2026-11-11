@@ -1,11 +1,10 @@
 # NEMD thermal boundary conductance of Al(111)/Si(111)
 #
-# STATUS: template. It has not been executed yet - check it with a short run
-# (and `-echo screen`) before committing compute time.
-#
+# Normally driven by run_nemd.py, which prepares every input file:
+#   python run_nemd.py --preset smoke
+# Direct use:
 #   lmp -in in.nemd.lammps -var T 300 -var dT 30
-#
-# Needs alsi.data and alsi.data.regions.lmp from build_interface.py.
+# Needs alsi.data, alsi.data.regions.lmp (build_interface.py) and potential.lmp.
 # Atom types: 1 = Si, 2 = Al.
 
 variable T      index 300        # mean temperature, K
@@ -13,6 +12,8 @@ variable dT     index 30         # thermostat offset: hot = T + dT, cold = T - d
 variable nequil index 200000     # NVT equilibration steps
 variable nsteady index 500000    # steps to reach steady state (discarded)
 variable nprod  index 2000000    # production steps
+variable nfreq  index 100000     # steps per temperature-profile frame
+variable ntally index 1000       # steps between thermostat energy samples
 
 units           metal
 atom_style      atomic
@@ -20,16 +21,10 @@ boundary        p p f
 read_data       alsi.data
 include         alsi.data.regions.lmp
 
-# ---- interatomic potential: enable exactly one block -----------------------
-# (a) Classical reference, e.g. a 2NN-MEAM Al-Si parameterisation.
-#pair_style      meam
-#pair_coeff      * * library.meam Si Al AlSi.meam Si Al
-#
-# (b) Machine-learned potential through its LAMMPS interface. The pair_style
-#     name and arguments depend on the model and build - see its documentation.
-#pair_style      mace no_domain_decomposition
-#pair_coeff      * * model-lammps.pt Si Al
-# -----------------------------------------------------------------------------
+# ---- interatomic potential ---------------------------------------------------
+# Kept in a separate file so that potentials can be swapped without touching
+# the protocol. run_nemd.py writes a 2NN-MEAM Al-Si setup by default.
+include         potential.lmp
 
 timestep        0.001
 neighbor        2.0 bin
@@ -54,6 +49,11 @@ fix             freeze walls setforce 0.0 0.0 0.0
 velocity        walls set 0.0 0.0 0.0
 velocity        mobile create ${T} 20261111 mom yes rot no dist gaussian
 
+# ---- 0. relax the interface --------------------------------------------------
+min_style       cg
+minimize        1.0e-8 1.0e-8 2000 20000
+reset_timestep  0
+
 # ---- 1. equilibration --------------------------------------------------------
 fix             eq mobile nvt temp ${T} ${T} 0.1
 thermo          5000
@@ -72,10 +72,11 @@ run             ${nsteady}
 reset_timestep  0
 variable        ehot  equal f_fhot
 variable        ecold equal f_fcold
-fix             tally all print 1000 "$(step) ${ehot} ${ecold}" file heat_tally.dat screen no title "# step E_hot(eV) E_cold(eV)"
+fix             tally all print ${ntally} "$(step) ${ehot} ${ecold}" file heat_tally.dat screen no title "# step E_hot(eV) E_cold(eV)"
 
 compute         layers mobile chunk/atom bin/1d z lower 2.0 units box
-fix             profile mobile ave/chunk 10 10000 100000 layers temp file temp_profile.dat
+variable        nrepeat equal ${nfreq}/10
+fix             profile mobile ave/chunk 10 ${nrepeat} ${nfreq} layers temp file temp_profile.dat
 
 run             ${nprod}
 write_data      alsi.final.data

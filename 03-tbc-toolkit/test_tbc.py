@@ -4,6 +4,7 @@ import pytest
 import build_interface as bi
 import mismatch as mm
 import nemd_post as npost
+import run_nemd
 
 AL, SI, DIA = mm.MATERIALS["Al"], mm.MATERIALS["Si"], mm.MATERIALS["diamond"]
 
@@ -146,3 +147,38 @@ def test_nemd_postprocessing_recovers_known_conductance(tmp_path, capsys):
 
 def test_unit_conversion():
     assert npost.EV_PER_PS_A2_TO_W_M2 == pytest.approx(1.602176634e13)
+
+
+# ---------------------------------------------------------------- driver
+def test_driver_dry_run_writes_consistent_inputs(monkeypatch, tmp_path, capsys):
+    monkeypatch.setattr(run_nemd, "HERE", tmp_path)
+    (tmp_path / "in.nemd.lammps").write_text((run_nemd.Path(__file__).parent / "in.nemd.lammps").read_text())
+    run_dir = run_nemd.main(["--preset", "full", "--dry-run"])
+    out = capsys.readouterr().out
+    assert "3360 atoms" in out and "2,700,000 MD steps" in out
+    assert "-var nprod 2000000" in out and "e+" not in out      # LAMMPS needs plain integers
+    for name in ("alsi.data", "alsi.data.regions.lmp", "potential.lmp", "in.nemd.lammps"):
+        assert (run_dir / name).exists()
+    assert "SiS AlS" in (run_dir / "potential.lmp").read_text()
+    text = (run_dir / "in.nemd.lammps").read_text()
+    for var in ("z_wall_lo", "z_cold_hi", "z_hot_lo", "z_wall_hi"):
+        assert "${%s}" % var in text and var in (run_dir / "alsi.data.regions.lmp").read_text()
+
+
+@pytest.mark.parametrize("preset", list(run_nemd.PRESETS))
+def test_presets_are_self_consistent(preset, tmp_path):
+    cfg = run_nemd.PRESETS[preset]
+    assert cfg["nprod"] % cfg["nfreq"] == 0 and cfg["nfreq"] % 10 == 0
+    s = bi.build_al_si(cfg["si"], cfg["al"])
+    regions = bi.write_regions(tmp_path / "r.lmp", s, cfg["wall"], cfg["bath"])
+    left, right = run_nemd.fit_windows(regions)
+    assert regions["z_cold_hi"] <= left[0] < left[1] < regions["z_interface"]
+    assert regions["z_interface"] < right[0] < right[1] <= regions["z_hot_lo"]
+    assert left[1] - left[0] > 6 and right[1] - right[0] > 6
+
+
+def test_driver_analysis_on_synthetic_output(tmp_path):
+    z_int, area = _synthetic_run(tmp_path)
+    regions = {"z_interface": z_int, "area": area, "z_cold_hi": 25.0, "z_hot_lo": 235.0}
+    r = run_nemd.analyse(tmp_path, regions)
+    assert r["G"] == pytest.approx(379e6, rel=0.03) and r["n_frames"] == 40

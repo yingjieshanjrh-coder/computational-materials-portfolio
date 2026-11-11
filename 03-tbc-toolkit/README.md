@@ -8,7 +8,8 @@ interfaces, starting from the Al(111)/Si(111) interface.
 | `mismatch.py` | Acoustic and diffuse mismatch models (Debye) | computed, tested |
 | `build_interface.py` | Al(111)/Si(111) supercell → LAMMPS data file | tested (geometry) |
 | `nemd_post.py` | NEMD output → flux, temperature jump, G ± error | tested on synthetic output |
-| `in.nemd.lammps` | NEMD input template | **not yet run** |
+| `in.nemd.lammps` | NEMD protocol (minimise, equilibrate, steady state, production) | **not yet run** |
+| `run_nemd.py` | One-command driver for the whole workflow | tested up to the LAMMPS call |
 
 ## 1. Classical baselines
 
@@ -54,20 +55,45 @@ starting guesses and must be relaxed.
 ## 3. NEMD and analysis
 
 ```bash
-lmp -in in.nemd.lammps -var T 300
-python nemd_post.py temp_profile.dat heat_tally.dat --area 229.9 \
-    --interface 129.3 --left 40 120 --right 140 240 --plot profile.png
+python run_nemd.py --preset smoke            # a few minutes: does everything run?
+python run_nemd.py --preset quick -T 300     # hours: first usable value
+python run_nemd.py --preset full  -T 300     # production length
 ```
 
-`G = J / ΔT`, with `J` from the thermostat energy slopes and `ΔT` from linear
-fits on each side extrapolated to the interface; the error bar is a block
-average over time. The analysis recovers a planted value of 379 MW m⁻² K⁻¹
-from synthetic LAMMPS-format output to within 3 %.
+`run_nemd.py` builds the interface, writes the potential file, runs LAMMPS and
+extracts `G = J / ΔT`, with `J` from the thermostat energy slopes and `ΔT` from
+linear fits on each side extrapolated to the interface. The error bar is a
+block average over time. The analysis recovers a planted value of
+379 MW m⁻² K⁻¹ from synthetic LAMMPS-format output to within 3 %.
+
+| Preset | Atoms | MD steps | Purpose |
+|---|---|---|---|
+| smoke | 1,008 | 3,000 | pipeline check only; the number is meaningless |
+| quick | 2,520 | 750,000 | first estimate |
+| full | 3,360 | 2,700,000 | production |
+
+Default potential: the Al–Si–Mg–Cu–Fe 2NN-MEAM set shipped with LAMMPS
+(Jelinek et al., Phys. Rev. B 85, 245102 (2012)). Another potential can be
+supplied with `--potential-file my_potential.lmp`.
+
+**Status: the LAMMPS input has not been executed yet.** Run the smoke preset
+first and read `runs/smoke_T300/screen.out` if it stops.
+
+### Installing LAMMPS
+
+- Ubuntu / Debian / Google Colab: `apt-get install -y lammps`
+- conda (Linux, macOS): `conda install -c conda-forge lammps`
+
+The MEAM package must be included in the build (`lmp -h | grep meam`). The
+potential files `library.meam` and `AlSiMgCuFe.meam` are looked for in the
+LAMMPS potentials directory; if they are not found, copy them from the
+`potentials/` folder of the LAMMPS source into `03-tbc-toolkit/potentials/`.
 
 ## Roadmap
 
-1. Short test run of the template with a classical Al–Si potential.
-2. Convergence in length and cross-section; relax the interface.
+1. Smoke run, then the quick preset with the MEAM potential.
+2. Convergence in length and cross-section; pressure-relax the cell at each
+   temperature (the walls are currently rigid).
 3. Swap in a machine-learned potential and compare against the baselines and
    experiment over 80–700 K.
 
@@ -87,5 +113,5 @@ coupling in the metal, quantum statistics below the Debye temperatures
 ## Tests
 
 ```bash
-pytest -q        # 20 tests
+pytest -q        # 25 tests
 ```
