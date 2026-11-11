@@ -1,0 +1,81 @@
+# NEMD thermal boundary conductance of Al(111)/Si(111)
+#
+# STATUS: template. It has not been executed yet - check it with a short run
+# (and `-echo screen`) before committing compute time.
+#
+#   lmp -in in.nemd.lammps -var T 300 -var dT 30
+#
+# Needs alsi.data and alsi.data.regions.lmp from build_interface.py.
+# Atom types: 1 = Si, 2 = Al.
+
+variable T      index 300        # mean temperature, K
+variable dT     index 30         # thermostat offset: hot = T + dT, cold = T - dT
+variable nequil index 200000     # NVT equilibration steps
+variable nsteady index 500000    # steps to reach steady state (discarded)
+variable nprod  index 2000000    # production steps
+
+units           metal
+atom_style      atomic
+boundary        p p f
+read_data       alsi.data
+include         alsi.data.regions.lmp
+
+# ---- interatomic potential: enable exactly one block -----------------------
+# (a) Classical reference, e.g. a 2NN-MEAM Al-Si parameterisation.
+#pair_style      meam
+#pair_coeff      * * library.meam Si Al AlSi.meam Si Al
+#
+# (b) Machine-learned potential through its LAMMPS interface. The pair_style
+#     name and arguments depend on the model and build - see its documentation.
+#pair_style      mace no_domain_decomposition
+#pair_coeff      * * model-lammps.pt Si Al
+# -----------------------------------------------------------------------------
+
+timestep        0.001
+neighbor        2.0 bin
+neigh_modify    every 1 delay 0 check yes
+
+region          rwall_lo block INF INF INF INF INF ${z_wall_lo} units box
+region          rwall_hi block INF INF INF INF ${z_wall_hi} INF units box
+region          rcold    block INF INF INF INF ${z_wall_lo} ${z_cold_hi} units box
+region          rhot     block INF INF INF INF ${z_hot_lo} ${z_wall_hi} units box
+group           wall_lo region rwall_lo
+group           wall_hi region rwall_hi
+group           walls union wall_lo wall_hi
+group           cold region rcold
+group           hot region rhot
+group           mobile subtract all walls
+
+# Si is at the bottom (cold side), Al at the top (hot side).
+variable        Thot  equal ${T}+${dT}
+variable        Tcold equal ${T}-${dT}
+
+fix             freeze walls setforce 0.0 0.0 0.0
+velocity        walls set 0.0 0.0 0.0
+velocity        mobile create ${T} 20261111 mom yes rot no dist gaussian
+
+# ---- 1. equilibration --------------------------------------------------------
+fix             eq mobile nvt temp ${T} ${T} 0.1
+thermo          5000
+thermo_style    custom step temp pe ke etotal
+run             ${nequil}
+unfix           eq
+
+# ---- 2. impose the heat current ----------------------------------------------
+fix             integrate mobile nve
+fix             fhot  hot  langevin ${Thot}  ${Thot}  0.1 48279 tally yes
+fix             fcold cold langevin ${Tcold} ${Tcold} 0.1 59123 tally yes
+thermo_style    custom step temp pe ke etotal f_fhot f_fcold
+run             ${nsteady}
+
+# ---- 3. production -----------------------------------------------------------
+reset_timestep  0
+variable        ehot  equal f_fhot
+variable        ecold equal f_fcold
+fix             tally all print 1000 "$(step) ${ehot} ${ecold}" file heat_tally.dat screen no title "# step E_hot(eV) E_cold(eV)"
+
+compute         layers mobile chunk/atom bin/1d z lower 2.0 units box
+fix             profile mobile ave/chunk 10 10000 100000 layers temp file temp_profile.dat
+
+run             ${nprod}
+write_data      alsi.final.data
