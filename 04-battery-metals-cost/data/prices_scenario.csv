@@ -1,0 +1,14 @@
+# ILLUSTRATIVE PRICE SCENARIO - round numbers chosen to exercise the model.
+# These are NOT market quotes. Replace every value with dated prices from a
+# source you can cite (LME, Fastmarkets, USGS, World Bank) before using results.
+# Units: USD per kg of contained metal.
+# Li is derived from a lithium carbonate price (divide USD/kg Li2CO3 by 0.1879).
+# Na is derived from a soda ash price (divide USD/kg Na2CO3 by 0.4338).
+metal,low,base,high
+Li,40,55,110
+Na,0.4,0.6,0.9
+Ni,12,16,24
+Co,20,30,50
+Mn,1.5,2.0,3.0
+Fe,0.08,0.10,0.15
+Al,2.0,2.5,3.2

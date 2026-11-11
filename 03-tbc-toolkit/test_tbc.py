@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 import build_interface as bi
+import compare
 import mismatch as mm
 import nemd_post as npost
 import run_nemd
@@ -182,3 +183,19 @@ def test_driver_analysis_on_synthetic_output(tmp_path):
     regions = {"z_interface": z_int, "area": area, "z_cold_hi": 25.0, "z_hot_lo": 235.0}
     r = run_nemd.analyse(tmp_path, regions)
     assert r["G"] == pytest.approx(379e6, rel=0.03) and r["n_frames"] == 40
+
+
+def test_compare_collects_and_flags_runs(tmp_path):
+    import json
+    for name, T, g, mis in (("quick_T300", 300, 5.1e8, 0.02), ("quick_T500", 500, 5.6e8, 0.30)):
+        d = tmp_path / name
+        d.mkdir()
+        (d / "result.json").write_text(json.dumps({"preset": "quick", "temperature": T, "G": g,
+                                                   "G_sem": 3e7, "thermostat_mismatch": mis}))
+    rows = compare.collect(tmp_path)
+    assert [r["T"] for r in rows] == [300.0, 500.0] and rows[0]["G"] == pytest.approx(510.0)
+    text = compare.table(rows)
+    assert "379" in text.splitlines()[1] and text.splitlines()[1].endswith("ok")
+    assert "not steady" in text.splitlines()[2]
+    compare.plot(rows, tmp_path / "g.png")
+    assert (tmp_path / "g.png").stat().st_size > 5000

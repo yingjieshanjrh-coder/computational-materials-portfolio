@@ -10,6 +10,7 @@ interfaces, starting from the Al(111)/Si(111) interface.
 | `nemd_post.py` | NEMD output → flux, temperature jump, G ± error | tested on synthetic output |
 | `in.nemd.lammps` | NEMD protocol (minimise, equilibrate, steady state, production) | smoke-tested |
 | `run_nemd.py` | One-command driver for the whole workflow | smoke-tested |
+| `compare.py` | Table and plot of finished runs against AMM/DMM and experiment | tested |
 
 ## 1. Classical baselines
 
@@ -114,5 +115,5 @@ coupling in the metal, quantum statistics below the Debye temperatures
 ## Tests
 
 ```bash
-pytest -q        # 25 tests
+pytest -q        # 26 tests
 ```
