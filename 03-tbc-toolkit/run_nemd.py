@@ -34,8 +34,8 @@ PRESETS = {
     #         Si bilayers, Al layers, equilibration, steady, production, frame
     "smoke": dict(si=12, al=18, nequil=500, nsteady=500, nprod=2000, nfreq=500,
                   ntally=100, wall=4.0, bath=8.0),
-    "quick": dict(si=30, al=45, nequil=50_000, nsteady=200_000, nprod=500_000,
-                  nfreq=50_000, ntally=1000, wall=6.0, bath=20.0),
+    "quick": dict(si=30, al=45, nequil=50_000, nsteady=150_000, nprod=300_000,
+                  nfreq=30_000, ntally=1000, wall=6.0, bath=20.0),
     "full": dict(si=40, al=60, nequil=200_000, nsteady=500_000, nprod=2_000_000,
                  nfreq=100_000, ntally=1000, wall=6.0, bath=20.0),
 }
@@ -145,7 +145,10 @@ def main(argv=None):
         return run_dir
     cmd[0] = find_lammps(args.lmp)
     if args.np > 1:
-        cmd = ["mpirun", "-np", str(args.np)] + cmd
+        mpi = ["mpirun", "-np", str(args.np)]
+        if hasattr(os, "geteuid") and os.geteuid() == 0:      # e.g. cloud notebooks
+            mpi += ["--allow-run-as-root", "--oversubscribe"]
+        cmd = mpi + cmd
 
     t0 = time.time()
     with open(run_dir / "screen.out", "w") as out:

@@ -8,8 +8,8 @@ interfaces, starting from the Al(111)/Si(111) interface.
 | `mismatch.py` | Acoustic and diffuse mismatch models (Debye) | computed, tested |
 | `build_interface.py` | Al(111)/Si(111) supercell → LAMMPS data file | tested (geometry) |
 | `nemd_post.py` | NEMD output → flux, temperature jump, G ± error | tested on synthetic output |
-| `in.nemd.lammps` | NEMD protocol (minimise, equilibrate, steady state, production) | **not yet run** |
-| `run_nemd.py` | One-command driver for the whole workflow | tested up to the LAMMPS call |
+| `in.nemd.lammps` | NEMD protocol (minimise, equilibrate, steady state, production) | smoke-tested |
+| `run_nemd.py` | One-command driver for the whole workflow | smoke-tested |
 
 ## 1. Classical baselines
 
@@ -69,15 +69,16 @@ block average over time. The analysis recovers a planted value of
 | Preset | Atoms | MD steps | Purpose |
 |---|---|---|---|
 | smoke | 1,008 | 3,000 | pipeline check only; the number is meaningless |
-| quick | 2,520 | 750,000 | first estimate |
+| quick | 2,520 | 500,000 | first estimate |
 | full | 3,360 | 2,700,000 | production |
 
 Default potential: the Al–Si–Mg–Cu–Fe 2NN-MEAM set shipped with LAMMPS
 (Jelinek et al., Phys. Rev. B 85, 245102 (2012)). Another potential can be
 supplied with `--potential-file my_potential.lmp`.
 
-**Status: the LAMMPS input has not been executed yet.** Run the smoke preset
-first and read `runs/smoke_T300/screen.out` if it stops.
+The smoke preset has been run end to end with LAMMPS (MEAM, single core:
+about 52,000 atom-steps per second, one minute in total). Production values
+are still to come. Add `--np N` to run on N MPI processes.
 
 ### Installing LAMMPS
 

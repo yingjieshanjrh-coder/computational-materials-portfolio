@@ -15,6 +15,7 @@ Inputs (as written by in.nemd.lammps):
 from __future__ import annotations
 
 import argparse
+import warnings
 from pathlib import Path
 
 import numpy as np
@@ -71,9 +72,14 @@ def temperature_jump(z, T, z_interface, left, right):
 
 def conductance(z, frames, flux, z_interface, left, right, n_blocks=5):
     """G in W m^-2 K^-1 with a block-average standard error over time."""
-    dT, sl, sr = temperature_jump(z, np.nanmean(frames, axis=0), z_interface, left, right)
+    def mean_profile(f):          # bins inside the rigid walls hold no mobile atoms
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            return np.nanmean(f, axis=0)
+
+    dT, sl, sr = temperature_jump(z, mean_profile(frames), z_interface, left, right)
     g = flux / abs(dT)
-    blocks = [flux / abs(temperature_jump(z, np.nanmean(b, axis=0), z_interface, left, right)[0])
+    blocks = [flux / abs(temperature_jump(z, mean_profile(b), z_interface, left, right)[0])
               for b in np.array_split(frames, n_blocks) if len(b)]
     sem = float(np.std(blocks, ddof=1) / np.sqrt(len(blocks))) if len(blocks) > 1 else float("nan")
     return {"G": float(g), "G_sem": sem, "dT": float(dT), "flux": float(flux),

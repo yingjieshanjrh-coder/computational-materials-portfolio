@@ -7,7 +7,7 @@ Each folder is self-contained and can become its own GitHub repository.
 |---|---|---|
 | `01-vasp-postkit` | Parses VASP `OUTCAR` / `EIGENVAL` / `DOSCAR`, reports band gaps and relaxation convergence, draws band-structure and DOS figures | 9 tests pass; parsers exercised on synthetic files written in VASP format, not yet on real calculations |
 | `02-bandgap-ml` | Composition descriptors + cross-validated regression for materials properties | 26 tests pass; shipped numbers come from a 46-compound demo table and are not a benchmark |
-| `03-tbc-toolkit` | Thermal boundary conductance: AMM/DMM baselines, Al(111)/Si(111) interface builder, NEMD post-processing, LAMMPS template | 25 tests pass; baselines are real calculations, the LAMMPS input has not been run yet |
+| `03-tbc-toolkit` | Thermal boundary conductance: AMM/DMM baselines, Al(111)/Si(111) interface builder, NEMD post-processing, LAMMPS template | 25 tests pass; baselines are real calculations, the NEMD workflow is smoke-tested, production runs pending |
 
 Requirements: Python 3.10+, `numpy`, `matplotlib`; project 02 also needs
 `pandas` and `scikit-learn`. Run `pytest` inside any folder.
